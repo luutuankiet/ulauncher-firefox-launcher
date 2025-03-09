@@ -68,7 +68,7 @@ class KeywordQueryEventListener(EventListener):
 
         #    Open website
         m = re.match(
-            "^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$",
+            r"^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$",
             query,
         )
         protocol = "https"
