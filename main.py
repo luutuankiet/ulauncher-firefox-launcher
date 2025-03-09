@@ -9,6 +9,7 @@ from ulauncher.api.shared.event import (
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
+from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
 from history import FirefoxHistory
 
 import re
@@ -59,11 +60,8 @@ class SystemExitEventListener(EventListener):
 
 
 class KeywordQueryEventListener(EventListener):
-    def on_event(self, event, extension):
-        query = event.get_argument() if event.get_argument() else ""
-        items = []
 
-        #    Open website
+    def _parse_url(self, query):
         m = re.match(
             r"^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$",
             query,
@@ -77,15 +75,32 @@ class KeywordQueryEventListener(EventListener):
             params = m.group(3)
             encoded = f"?{urllib.parse.quote(params)}" if params else ""
             url = f"{protocol}://{base}{encoded}"
+        return url
 
-            items.append(
-                ExtensionResultItem(
-                    icon="images/icon.png",
-                    name="Open URL",
-                    description=url,
-                    on_enter=OpenUrlAction(url),
-                )
+    def on_event(self, event, extension):
+        query = event.get_argument() if event.get_argument() else ""
+        items = []
+
+        #    Open website
+        desc = ""
+        action = None
+        url = self._parse_url(query)
+
+        if url:
+            desc = url
+            action = OpenUrlAction(url)
+        else:
+            desc = "Type in a valid URL and press Enter..."
+            action = DoNothingAction()
+
+        items.append(
+            ExtensionResultItem(
+                icon="images/icon.png",
+                name="Open URL",
+                description=desc,
+                on_enter=action,
             )
+        )
 
         #   Search Firefox history
         results = extension.history.search(query)
