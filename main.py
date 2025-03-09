@@ -54,16 +54,13 @@ class PreferencesUpdateEventListener(EventListener):
 
 
 class SystemExitEventListener(EventListener):
-    def on_event(self, event, extension):
+    def on_event(self, _, extension):
         extension.history.close()
 
 
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
-        query = event.get_argument()
-        #   Blank Query
-        if query == None:
-            query = ""
+        query = event.get_argument() if event.get_argument() else ""
         items = []
 
         #    Open website
@@ -90,10 +87,9 @@ class KeywordQueryEventListener(EventListener):
                 )
             )
 
-        #   Search into Firefox History
+        #   Search Firefox history
         results = extension.history.search(query)
         for link in results:
-            #   Encode
             hostname = link[0]
             title = link[1] if link[1] else hostname
 
