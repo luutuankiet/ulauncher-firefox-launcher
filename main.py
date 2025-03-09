@@ -1,11 +1,9 @@
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
-from ulauncher.api.shared.event import (
-    KeywordQueryEvent,
-    SystemExitEvent,
-    PreferencesUpdateEvent,
-    PreferencesEvent,
-)
+from ulauncher.api.shared.event import KeywordQueryEvent
+from ulauncher.api.shared.event import SystemExitEvent
+from ulauncher.api.shared.event import PreferencesUpdateEvent
+from ulauncher.api.shared.event import PreferencesEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
@@ -19,8 +17,10 @@ import urllib.parse
 class FirefoxExtension(Extension):
     def __init__(self):
         super(FirefoxExtension, self).__init__()
+        
         #   Firefox History Getter
         self.history = FirefoxHistory()
+        
         #   Ulauncher Events
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(SystemExitEvent, SystemExitEventListener())
@@ -61,14 +61,14 @@ class SystemExitEventListener(EventListener):
 
 class KeywordQueryEventListener(EventListener):
 
-    def _parse_url(self, query):
+    def _parse_url(self, query, default_protocol = "https"):
         m = re.match(
             r"^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$",
             query,
         )
-        protocol = "https"
         url = ""
         if m:
+            protocol = default_protocol
             if m.group(1):
                 protocol = m.group(1)
             base = m.group(2)
@@ -104,6 +104,7 @@ class KeywordQueryEventListener(EventListener):
 
         #   Search Firefox history
         results = extension.history.search(query)
+        
         for link in results:
             hostname = link[0]
             title = link[1] if link[1] else hostname
