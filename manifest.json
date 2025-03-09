@@ -15,16 +15,6 @@
         "default_value": "ff"
       },
       {
-        "id": "aggregate",
-        "type": "select",
-        "name": "Aggregate history results by hostname",
-        "default_value": "false",
-        "options":[
-          {"value":"true","text":"Yes"},
-          {"value":"false","text":"No"}
-        ]
-      },
-      {
         "id": "order",
         "type": "select",
         "name": "Histroy results order",

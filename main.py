@@ -22,8 +22,6 @@ class FirefoxHistoryExtension(Extension):
 
 class PreferencesEventListener(EventListener):
     def on_event(self,event,extension):
-        #   Aggregate Results
-        extension.history.aggregate = event.preferences['aggregate']
         #   Results Order
         extension.history.order = event.preferences['order']
         #   Results Number
@@ -45,8 +43,6 @@ class PreferencesUpdateEventListener(EventListener):
                 extension.history.limit = n
             except:
                 pass
-        elif event.id == 'aggregate':
-            extension.history.aggregate = event.new_value
 
 class SystemExitEventListener(EventListener):
     def on_event(self,event,extension):
@@ -82,29 +78,12 @@ class KeywordQueryEventListener(EventListener):
         for link in results:
             #   Encode 
             hostname = link[0]
-            #   Split Domain Levels
-            dm = hostname.split('.')
-            #   Remove WWW
-            if dm[0]=='www':
-                i = 1
-            else:
-                i = 0
-            #   Join remaining domains and capitalize
-            name = ' '.join(dm[i:len(dm)-1]).title()
-            #   TODO: favicon of the website
-            if extension.history.aggregate == "true":
-                items.append(ExtensionResultItem(icon='images/icon.png',
-                                                name=name,
-                                                on_enter=OpenUrlAction('https://'+hostname)))
-            else:
-                if link[1] == None:
-                    title = hostname
-                else:
-                    title = link[1]
-                items.append(ExtensionResultItem(icon='images/icon.png',
-                                                name=title,
-                                                description=hostname,
-                                                on_enter=OpenUrlAction(hostname)))
+            title = link[1] if link[1] else hostname
+                
+            items.append(ExtensionResultItem(icon='images/icon.png',
+                                            name=title,
+                                            description=hostname,
+                                            on_enter=OpenUrlAction(hostname)))
 
         return RenderResultListAction(items)
 

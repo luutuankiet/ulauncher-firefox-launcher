@@ -7,8 +7,6 @@ import logging
 
 class FirefoxHistory():
     def __init__(self):
-        #   Aggregate results
-        self.aggregate = None
         #   Results order
         self.order = None
         #   Results number
@@ -66,11 +64,7 @@ class FirefoxHistory():
             return 'Unknown'
 
     def search(self,query_str):
-        #   Aggregate URLs by hostname
-        if self.aggregate == "true":
-            query = 'SELECT hostname(url)'
-        else:
-            query = 'SELECT DISTINCT url'
+        query = 'SELECT DISTINCT url'
         query += ',title FROM moz_places WHERE'
         #   Search terms
         terms = query_str.split(' ')
@@ -79,34 +73,19 @@ class FirefoxHistory():
         #   Delete last AND
         query = query[:-4]
 
-        if self.aggregate == "true":
-            query += ' GROUP BY hostname(url) ORDER BY '
-            #   Firefox Frecency
-            if self.order == 'frecency':
-                query += 'sum(frecency)'
-            #   Visit Count
-            elif self.order == 'visit':
-                query += 'sum(visit_count)'
-            #   Last Visit
-            elif self.order == 'recent':
-                query += 'max(last_visit_date)'
-            #   Not sorted
-            else:
-                query += 'hostname(url)'
+        query += ' ORDER BY '
+        #   Firefox Frecency
+        if self.order == 'frecency':
+            query += 'frecency'
+        #   Visit Count
+        elif self.order == 'visit':
+            query += 'visit_count'
+        #   Last Visit
+        elif self.order == 'recent':
+            query += 'last_visit_date'
+        #   Not sorted
         else:
-            query += ' ORDER BY '
-            #   Firefox Frecency
-            if self.order == 'frecency':
-                query += 'frecency'
-            #   Visit Count
-            elif self.order == 'visit':
-                query += 'visit_count'
-            #   Last Visit
-            elif self.order == 'recent':
-                query += 'last_visit_date'
-            #   Not sorted
-            else:
-                query += 'url'
+            query += 'url'
 
         query += ' DESC LIMIT %d' % self.limit
 
