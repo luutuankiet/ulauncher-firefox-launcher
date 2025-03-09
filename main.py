@@ -6,11 +6,14 @@ from ulauncher.api.shared.action.RenderResultListAction import RenderResultListA
 from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
 from history import FirefoxHistory
 
+import re
+import urllib.parse
+
 class FirefoxHistoryExtension(Extension):
     def __init__(self):
         super(FirefoxHistoryExtension, self).__init__()
         #   Firefox History Getter
-        self.fh = FirefoxHistory()
+        self.history = FirefoxHistory()
         #   Ulauncher Events
         self.subscribe(KeywordQueryEvent,KeywordQueryEventListener())
         self.subscribe(SystemExitEvent,SystemExitEventListener())
@@ -20,34 +23,34 @@ class FirefoxHistoryExtension(Extension):
 class PreferencesEventListener(EventListener):
     def on_event(self,event,extension):
         #   Aggregate Results
-        extension.fh.aggregate = event.preferences['aggregate']
+        extension.history.aggregate = event.preferences['aggregate']
         #   Results Order
-        extension.fh.order = event.preferences['order']
+        extension.history.order = event.preferences['order']
         #   Results Number
         try:
             n = int(event.preferences['limit'])
         except:
             n = 10
-        extension.fh.limit = n
+        extension.history.limit = n
         
 class PreferencesUpdateEventListener(EventListener):
     def on_event(self,event,extension):
         #   Results Order
         if event.id == 'order':
-            extension.fh.order = event.new_value
+            extension.history.order = event.new_value
         #   Results Number
         elif event.id == 'limit':
             try:
                 n = int(event.new_value)
-                extension.fh.limit = n
+                extension.history.limit = n
             except:
                 pass
         elif event.id == 'aggregate':
-            extension.fh.aggregate = event.new_value
+            extension.history.aggregate = event.new_value
 
 class SystemExitEventListener(EventListener):
     def on_event(self,event,extension):
-        extension.fh.close()
+        extension.history.close()
 
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
@@ -56,8 +59,26 @@ class KeywordQueryEventListener(EventListener):
         if query == None:
             query = ''
         items = []
+        
+        #    Open website        
+        m = re.match("^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$", query)
+        protocol = "https"
+        url = ""
+        if m:
+            if m.group(1):
+                protocol = m.group(1)
+            base = m.group(2)
+            params = m.group(3)
+            encoded = f"?{urllib.parse.quote(params)}" if params else ""
+            url = f"{protocol}://{base}{encoded}"
+        
+            items.append(ExtensionResultItem(icon='images/icon.png',
+                                                    name="Open URL",
+                                                    description=url,
+                                                    on_enter=OpenUrlAction(url)))
+            
         #   Search into Firefox History
-        results = extension.fh.search(query)
+        results = extension.history.search(query)
         for link in results:
             #   Encode 
             hostname = link[0]
@@ -71,7 +92,7 @@ class KeywordQueryEventListener(EventListener):
             #   Join remaining domains and capitalize
             name = ' '.join(dm[i:len(dm)-1]).title()
             #   TODO: favicon of the website
-            if extension.fh.aggregate == "true":
+            if extension.history.aggregate == "true":
                 items.append(ExtensionResultItem(icon='images/icon.png',
                                                 name=name,
                                                 on_enter=OpenUrlAction('https://'+hostname)))
