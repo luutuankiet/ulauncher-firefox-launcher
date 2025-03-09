@@ -1,4 +1,5 @@
-# Ulauncher Firefox History
+# Ulauncher Firefox
+
 ![screenshot](images/screenshot.png)
 
 Simple [Ulauncher](https://ulauncher.io) extension for opening websites in Firefox. The extensions provides suggestions
