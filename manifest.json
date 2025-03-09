@@ -1,8 +1,8 @@
 {
     "required_api_version": "^2.0.0",
-    "name": "Firefox History",
-    "description": "Search into Firefox history",
-    "developer_name": "Riccardo Massidda",
+    "name": "Firefox",
+    "description": "Open websites in Firefox",
+    "developer_name": "Robin Strehlow, Riccardo Massidda",
     "icon": "images/icon.png",
     "options": {
       "query_debounce": 0.1
@@ -11,13 +11,13 @@
       {
         "id": "kw",
         "type": "keyword",
-        "name": "Firefox History",
-        "default_value": "fh"
+        "name": "Firefox",
+        "default_value": "ff"
       },
       {
         "id": "aggregate",
         "type": "select",
-        "name": "Aggregate results by hostname",
+        "name": "Aggregate history results by hostname",
         "default_value": "false",
         "options":[
           {"value":"true","text":"Yes"},
@@ -27,7 +27,7 @@
       {
         "id": "order",
         "type": "select",
-        "name": "Results order",
+        "name": "Histroy results order",
         "default_value": "frecency",
         "options":[
           {"value":"frecency","text":"Firefox Frecency"},
@@ -38,7 +38,7 @@
       {
         "id": "limit",
         "type": "input",
-        "name": "Results number",
+        "name": "History results number",
         "default_value": "5"
       }
 
