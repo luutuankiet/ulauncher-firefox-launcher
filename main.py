@@ -16,9 +16,9 @@ import re
 import urllib.parse
 
 
-class FirefoxHistoryExtension(Extension):
+class FirefoxExtension(Extension):
     def __init__(self):
-        super(FirefoxHistoryExtension, self).__init__()
+        super(FirefoxExtension, self).__init__()
         #   Firefox History Getter
         self.history = FirefoxHistory()
         #   Ulauncher Events
@@ -29,7 +29,7 @@ class FirefoxHistoryExtension(Extension):
 
 
 class PreferencesEventListener(EventListener):
-    def on_event(self, event, extension):
+    def on_event(self, event: PreferencesEvent, extension: FirefoxExtension):
         #   Results Order
         extension.history.order = event.preferences["order"]
         #   Results Number
@@ -41,7 +41,7 @@ class PreferencesEventListener(EventListener):
 
 
 class PreferencesUpdateEventListener(EventListener):
-    def on_event(self, event, extension):
+    def on_event(self, event: PreferencesUpdateEvent, extension: FirefoxExtension):
         #   Results Order
         if event.id == "order":
             extension.history.order = event.new_value
@@ -55,7 +55,7 @@ class PreferencesUpdateEventListener(EventListener):
 
 
 class SystemExitEventListener(EventListener):
-    def on_event(self, _, extension):
+    def on_event(self, _: SystemExitEvent, extension: FirefoxExtension):
         extension.history.close()
 
 
@@ -77,7 +77,7 @@ class KeywordQueryEventListener(EventListener):
             url = f"{protocol}://{base}{encoded}"
         return url
 
-    def on_event(self, event, extension):
+    def on_event(self, event: KeywordQueryEvent, extension: FirefoxExtension):
         query = event.get_argument() if event.get_argument() else ""
         items = []
 
@@ -121,4 +121,4 @@ class KeywordQueryEventListener(EventListener):
 
 
 if __name__ == "__main__":
-    FirefoxHistoryExtension().run()
+    FirefoxExtension().run()
