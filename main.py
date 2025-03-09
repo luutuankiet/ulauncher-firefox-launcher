@@ -6,6 +6,7 @@ from ulauncher.api.shared.event import PreferencesUpdateEvent
 from ulauncher.api.shared.event import PreferencesEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
+from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
 from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
 from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
 from firefox import FirefoxDatabase
@@ -106,17 +107,21 @@ class KeywordQueryEventListener(EventListener):
         results = extension.database.search(query)
 
         for link in results:
-            hostname = link[0]
-            title = link[1] if link[1] else hostname
+            url = link[0]
+            title = link[1] if link[1] else url
 
-            items.append(
-                ExtensionResultItem(
-                    icon="images/icon.png",
-                    name=title,
-                    description=hostname,
-                    on_enter=OpenUrlAction(hostname),
+            if url != query:
+                items.append(
+                    ExtensionResultItem(
+                        icon="images/icon.png",
+                        name=title,
+                        description=url,
+                        on_enter=OpenUrlAction(url),
+                        on_alt_enter=SetUserQueryAction(
+                            f'{extension.preferences["kw"]} {url}'
+                        ),
+                    )
                 )
-            )
 
         return RenderResultListAction(items)
 
