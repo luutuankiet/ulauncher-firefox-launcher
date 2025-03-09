@@ -19,3 +19,7 @@ respective **sorting criteria** can be changed. The order of suggestions can be 
 
 Open Ulauncher and type in the set up keyword (defaults to `ff`). You can then either provide a valid URL to open a
 webpage, or a search query to browse your browser's history and bookmarks.
+
+## License
+
+This project is licensed under the terms of the GPLv3 license. See the LICENSE file for details.
