@@ -1,4 +1,4 @@
-# Ulauncher Firefox
+# Ulauncher Firefox Launcher
 
 ![screenshot](images/screenshot.png)
 
