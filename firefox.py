@@ -9,7 +9,8 @@ import urllib.parse
 logger = logging.getLogger(__name__)
 
 
-class FirefoxHistory:
+class FirefoxDatabase:
+
     def __init__(self):
         #   Results order
         self.order = None
@@ -17,17 +18,17 @@ class FirefoxHistory:
         #   Results number
         self.limit = None
 
-        #   Set history location
-        history_location = self.searchPlaces()
+        #   Set database location
+        db_location = self.searchPlaces()
 
         #   Temporary  file
         #   Using FF63 the DB was locked for exclusive use of FF
         #   TODO:   Regular updates of the temporary file
-        temporary_history_location = tempfile.mktemp()
-        shutil.copyfile(history_location, temporary_history_location)
+        temporary_db_location = tempfile.mktemp()
+        shutil.copyfile(db_location, temporary_db_location)
 
-        #   Open Firefox history database
-        self.conn = sqlite3.connect(temporary_history_location)
+        #   Open Firefox database
+        self.conn = sqlite3.connect(temporary_db_location)
 
         #   External functions
         self.conn.create_function("hostname", 1, self.__getHostname)
@@ -76,7 +77,9 @@ class FirefoxHistory:
         terms = query_str.split(" ")
         term_where = []
         for term in terms:
-            term_where.append(f'((url LIKE "%{term}%") OR (title LIKE "%{term}%"))')
+            term_where.append(
+                f'((url LIKE "%{term}%") OR (moz_bookmarks.title LIKE "%{term}%") OR (moz_places.title LIKE "%{term}%"))'
+            )
 
         where = " AND ".join(term_where)
 
@@ -84,12 +87,25 @@ class FirefoxHistory:
         order_by_dict = {
             "frequency": "frequency",
             "visit": "visit_count",
-            "recent": "recent",
+            "recent": "last_visit_date",
         }
         order_by = order_by_dict.get(self.order, "url")
 
-        #   Select query
-        query = f"SELECT DISTINCT url, title FROM moz_places WHERE {where} ORDER BY {order_by} DESC LIMIT {self.limit};"
+        query = f"""SELECT 
+            url, 
+            CASE WHEN moz_bookmarks.title <> '' 
+                THEN moz_bookmarks.title
+                ELSE moz_places.title 
+            END AS label,
+            CASE WHEN moz_bookmarks.title <> '' 
+                THEN 1
+                ELSE 0 
+            END AS is_bookmark
+            FROM moz_places
+                LEFT OUTER JOIN moz_bookmarks ON(moz_bookmarks.fk = moz_places.id)
+            WHERE {where}
+            ORDER BY is_bookmark DESC, {order_by} DESC
+            LIMIT {self.limit};"""
 
         #   Query execution
         rows = []
@@ -99,7 +115,6 @@ class FirefoxHistory:
             rows = cursor.fetchall()
         except Exception as e:
             logger.error("Error in query (%s) execution: %s" % (query, e))
-            
         return rows
 
     def close(self):

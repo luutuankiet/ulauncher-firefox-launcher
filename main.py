@@ -8,7 +8,7 @@ from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
 from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
-from history import FirefoxHistory
+from firefox import FirefoxDatabase
 
 import re
 import urllib.parse
@@ -17,10 +17,10 @@ import urllib.parse
 class FirefoxExtension(Extension):
     def __init__(self):
         super(FirefoxExtension, self).__init__()
-        
-        #   Firefox History Getter
-        self.history = FirefoxHistory()
-        
+
+        #   Firefox database object
+        self.database = FirefoxDatabase()
+
         #   Ulauncher Events
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(SystemExitEvent, SystemExitEventListener())
@@ -31,37 +31,37 @@ class FirefoxExtension(Extension):
 class PreferencesEventListener(EventListener):
     def on_event(self, event: PreferencesEvent, extension: FirefoxExtension):
         #   Results Order
-        extension.history.order = event.preferences["order"]
+        extension.database.order = event.preferences["order"]
         #   Results Number
         try:
             n = int(event.preferences["limit"])
         except:
             n = 10
-        extension.history.limit = n
+        extension.database.limit = n
 
 
 class PreferencesUpdateEventListener(EventListener):
     def on_event(self, event: PreferencesUpdateEvent, extension: FirefoxExtension):
         #   Results Order
         if event.id == "order":
-            extension.history.order = event.new_value
+            extension.database.order = event.new_value
         #   Results Number
         elif event.id == "limit":
             try:
                 n = int(event.new_value)
-                extension.history.limit = n
+                extension.database.limit = n
             except:
                 pass
 
 
 class SystemExitEventListener(EventListener):
     def on_event(self, _: SystemExitEvent, extension: FirefoxExtension):
-        extension.history.close()
+        extension.database.close()
 
 
 class KeywordQueryEventListener(EventListener):
 
-    def _parse_url(self, query, default_protocol = "https"):
+    def _parse_url(self, query, default_protocol="https"):
         m = re.match(
             r"^(?:([a-z-A-Z]+)://)?([a-zA-Z0-9/-_]+\.[a-zA-Z0-9/-_\.]+)(?:\?(.*))?$",
             query,
@@ -102,9 +102,9 @@ class KeywordQueryEventListener(EventListener):
             )
         )
 
-        #   Search Firefox history
-        results = extension.history.search(query)
-        
+        #   Search Firefox bookmarks and history
+        results = extension.database.search(query)
+
         for link in results:
             hostname = link[0]
             title = link[1] if link[1] else hostname
