@@ -1,23 +1,20 @@
 # Ulauncher Firefox History
-![screenshot](screenshot.png)
-### [Ulauncher](https://ulauncher.io) extension for quickly accessing already visited websites.
+![screenshot](images/screenshot.png)
 
-## Use
-> fh 
-
-List the five most popular websites in Firefox history.
-
-> fh query
-
-List the five most popular websites in Firefox history that matches the query
+Simple [Ulauncher](https://ulauncher.io) extension for opening websites in Firefox. The extensions provides suggestions
+based on the browsing history as well as the bookmarks.
 
 ## Settings
 
-The search results can be **aggregated by hostname**, so that visiting _twitter.com/UlauncherApp_ and _twitter.com/github_ generates _twitter.com_ as result.
+In Ulauncher GUI, you can set the extension's preferences. Here, the **maximal number** of suggested items and the
+respective **sorting criteria** can be changed. The order of suggestions can be determined by  
 
-The **number of results** and the **popularity criteria** can be changed in the extension's settings. The popularity can be determined by last visit date, visit count or [Firefox Frecency](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) heuristic.
+- last visit date
+- visit count
+- Firefox frecency (see [here](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/Places/Frecency_algorithm) for
+  more info)
 
-## Install
-> https://github.com/rmassidda/ulauncher-firefox-history
+## Usage
 
-Copy and paste this repository link inside __Add extension__ in Ulauncher's settings panel.
+Open Ulauncher and type in the set up keyword (defaults to `ff`). You can then either provide a valid URL to open a
+webpage, or a search query to browse your browser's history and bookmarks.
