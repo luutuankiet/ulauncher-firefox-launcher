@@ -34,62 +34,115 @@ class FirefoxDatabase:
         self.conn.create_function("hostname", 1, self.__getHostname)
 
     def searchPlaces(self):
-        #   Firefox folder path
-        firefox_path = os.path.join(os.environ["HOME"], ".mozilla/firefox/")
-        if not os.path.exists(firefox_path):
-            firefox_path = os.path.join(
-                os.environ["HOME"], "snap/firefox/common/.mozilla/firefox/"
-            )
-
-        #   Firefox profiles configuration file path
-        conf_path = os.path.join(firefox_path, "profiles.ini")
-
-        # Debug
-        logger.debug("Config path %s" % conf_path)
-        if not os.path.exists(conf_path):
-            logger.error("Firefox profiles.ini not found")
-            return None
-
-        #   Profile config parse
-        profile = configparser.RawConfigParser()
-        profile.read(conf_path)
+        """Find the Firefox places.sqlite database file"""
+        # Get the user's home directory
+        home = os.environ.get("HOME")
         
-        # Find the default profile
-        prof_path = None
+        # List of possible Firefox profile base paths
+        possible_base_paths = [
+            os.path.join(home, ".mozilla/firefox/"),
+            os.path.join(home, "snap/firefox/common/.mozilla/firefox/"),
+            os.path.join(home, "snap/firefox/current/.mozilla/firefox/"),
+            os.path.join(home, ".local/share/firefox/"),
+            os.path.join(home, ".local/share/firefoxpwa/profiles/")
+        ]
         
-        # Try to find a profile section with Default=1 or IsRelative=1
-        for section in profile.sections():
-            if section.startswith("Profile"):
-                # First, try to find the default profile
-                if profile.has_option(section, "Default") and profile.get(section, "Default") == "1":
+        # First try using profiles.ini
+        for base_path in possible_base_paths:
+            if not os.path.exists(base_path):
+                logger.debug(f"Path does not exist: {base_path}")
+                continue
+                
+            conf_path = os.path.join(base_path, "profiles.ini")
+            if not os.path.exists(conf_path):
+                logger.debug(f"profiles.ini not found at: {conf_path}")
+                continue
+                
+            logger.debug(f"Found profiles.ini at: {conf_path}")
+            
+            try:
+                # Parse the profiles.ini file
+                profile = configparser.RawConfigParser()
+                profile.read(conf_path)
+                
+                # Try to find the default profile
+                for section in profile.sections():
+                    if not section.startswith("Profile"):
+                        continue
+                        
+                    # Skip if no Path option
+                    if not profile.has_option(section, "Path"):
+                        continue
+                        
                     prof_path = profile.get(section, "Path")
-                    logger.debug(f"Found default profile: {prof_path}")
-                    break
-                # If no default profile is marked, use the first profile we find
-                elif not prof_path and profile.has_option(section, "Path"):
-                    prof_path = profile.get(section, "Path")
-                    logger.debug(f"Using profile: {prof_path}")
+                    
+                    # Check if this is the default profile
+                    is_default = (profile.has_option(section, "Default") and 
+                                 profile.get(section, "Default") == "1")
+                    
+                    # Determine if the path is relative or absolute
+                    is_relative = True
+                    if profile.has_option(section, "IsRelative"):
+                        is_relative = profile.get(section, "IsRelative") == "1"
+                    
+                    # Construct the full path to the profile
+                    if is_relative:
+                        profile_path = os.path.join(base_path, prof_path)
+                    else:
+                        profile_path = prof_path
+                    
+                    # Check if places.sqlite exists in this profile
+                    places_path = os.path.join(profile_path, "places.sqlite")
+                    if os.path.exists(places_path):
+                        logger.debug(f"Found places.sqlite at: {places_path}")
+                        return places_path
+                        
+                    # If this is the default profile but places.sqlite doesn't exist,
+                    # log it and continue searching
+                    if is_default:
+                        logger.debug(f"Default profile found but places.sqlite missing: {places_path}")
+            
+            except Exception as e:
+                logger.error(f"Error parsing profiles.ini at {conf_path}: {str(e)}")
         
-        # If we still don't have a profile path, try Profile0 as a fallback
-        if not prof_path and profile.has_section("Profile0") and profile.has_option("Profile0", "Path"):
-            prof_path = profile.get("Profile0", "Path")
-            logger.debug(f"Using Profile0 as fallback: {prof_path}")
+        # If we couldn't find it using profiles.ini, try direct search
+        logger.debug("Trying direct search for places.sqlite...")
         
-        if not prof_path:
-            logger.error("Could not find a valid profile path in profiles.ini")
-            return None
-
-        #   Sqlite db directory path
-        sql_path = os.path.join(firefox_path, prof_path)
-        sql_path = os.path.join(sql_path, "places.sqlite")
-
-        # Debug
-        logger.debug("Sql path %s" % sql_path)
-        if not os.path.exists(sql_path):
-            logger.error("Firefox places.sqlite not found")
-            return None
-
-        return sql_path
+        # Direct search in common profile locations
+        for base_path in possible_base_paths:
+            if not os.path.exists(base_path):
+                continue
+                
+            # Look for directories that might be profile directories
+            try:
+                for item in os.listdir(base_path):
+                    item_path = os.path.join(base_path, item)
+                    
+                    # Skip if not a directory
+                    if not os.path.isdir(item_path):
+                        continue
+                        
+                    # Check if this looks like a Firefox profile (has .default or contains random characters)
+                    if (item.endswith('.default') or 
+                        item.endswith('.default-release') or 
+                        (len(item) > 8 and '.' in item)):
+                        
+                        places_path = os.path.join(item_path, "places.sqlite")
+                        if os.path.exists(places_path):
+                            logger.debug(f"Found places.sqlite directly at: {places_path}")
+                            return places_path
+            except Exception as e:
+                logger.error(f"Error searching directory {base_path}: {str(e)}")
+        
+        # Specific check for your known path
+        specific_path = os.path.join(home, "snap/firefox/common/.mozilla/firefox/yq7q3frd.default/places.sqlite")
+        if os.path.exists(specific_path):
+            logger.debug(f"Found places.sqlite at specific path: {specific_path}")
+            return specific_path
+            
+        # If we get here, we couldn't find the places.sqlite file
+        logger.error("Firefox places.sqlite not found in any location")
+        return None
 
     #   Get hostname from url
     def __getHostname(self, string):
