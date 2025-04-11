@@ -34,31 +34,14 @@ class FirefoxDatabase:
         self.conn.create_function("hostname", 1, self.__getHostname)
 
     def searchPlaces(self):
-        # List of possible Firefox paths to check
-        possible_paths = [
-            os.path.join(os.environ["HOME"], ".mozilla/firefox/"),
-            os.path.join(os.environ["HOME"], "snap/firefox/common/.mozilla/firefox/"),
-            # Add more potential snap paths
-            os.path.join(os.environ["HOME"], "snap/firefox/current/.mozilla/firefox/"),
-            "/var/lib/snapd/snap/firefox/common/.mozilla/firefox/",
-            # For Lubuntu-specific snap path (if different)
-            os.path.join(os.environ["HOME"], ".var/app/org.mozilla.firefox/.mozilla/firefox/")
-        ]
-        
-        firefox_path = None
-        
-        # Try each path until we find one that exists
-        for path in possible_paths:
-            if os.path.exists(path):
-                firefox_path = path
-                logger.debug(f"Found Firefox path: {firefox_path}")
-                break
-        
-        if not firefox_path:
-            logger.error("Firefox directory not found in any of the expected locations")
-            return None
+        #   Firefox folder path
+        firefox_path = os.path.join(os.environ["HOME"], ".mozilla/firefox/")
+        if not os.path.exists(firefox_path):
+            firefox_path = os.path.join(
+                os.environ["HOME"], "snap/firefox/common/.mozilla/firefox/"
+            )
 
-        # Firefox profiles configuration file path
+        #   Firefox profiles configuration file path
         conf_path = os.path.join(firefox_path, "profiles.ini")
 
         # Debug
@@ -67,22 +50,36 @@ class FirefoxDatabase:
             logger.error("Firefox profiles.ini not found")
             return None
 
-        # Profile config parse
+        #   Profile config parse
         profile = configparser.RawConfigParser()
         profile.read(conf_path)
         
-        # Try to get the path from different profile sections
+        # Find the default profile
         prof_path = None
+        
+        # Try to find a profile section with Default=1 or IsRelative=1
         for section in profile.sections():
-            if section.startswith("Profile") and profile.has_option(section, "Path"):
-                prof_path = profile.get(section, "Path")
-                break
+            if section.startswith("Profile"):
+                # First, try to find the default profile
+                if profile.has_option(section, "Default") and profile.get(section, "Default") == "1":
+                    prof_path = profile.get(section, "Path")
+                    logger.debug(f"Found default profile: {prof_path}")
+                    break
+                # If no default profile is marked, use the first profile we find
+                elif not prof_path and profile.has_option(section, "Path"):
+                    prof_path = profile.get(section, "Path")
+                    logger.debug(f"Using profile: {prof_path}")
+        
+        # If we still don't have a profile path, try Profile0 as a fallback
+        if not prof_path and profile.has_section("Profile0") and profile.has_option("Profile0", "Path"):
+            prof_path = profile.get("Profile0", "Path")
+            logger.debug(f"Using Profile0 as fallback: {prof_path}")
         
         if not prof_path:
             logger.error("Could not find a valid profile path in profiles.ini")
             return None
 
-        # Sqlite db directory path
+        #   Sqlite db directory path
         sql_path = os.path.join(firefox_path, prof_path)
         sql_path = os.path.join(sql_path, "places.sqlite")
 
